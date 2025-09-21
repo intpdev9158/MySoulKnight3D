@@ -68,25 +68,27 @@ public class DungeonGen : MonoBehaviour
     public int seed = 0;
 
     // 내부상태
-    private readonly Dictionary<Vector3Int, Room> map = new();
-    private readonly List<Vector3Int> frontier = new();
+    private readonly Dictionary<Vector3Int, Room> map = new(); // 방 좌표, 방
+    private readonly List<Vector3Int> frontier = new(); // 방 좌표
 
     // 소켓 이름 테이블
     private static readonly (Dir dir, string name, bool vertical)[] SocketSpec = new[] {
-        (Dir.XPlus, "Socket_X+", false),
-        (Dir.XMinus, "Socket_X-", false),
-        (Dir.ZPlus, "Socket_Z+", false),
-        (Dir.ZMinus, "Socket_Z-", false),
-        (Dir.YPlus, "Socket_Y+", true),
-        (Dir.YMinus, "Socket_Y-", true),
+        (Dir.XPlus,     "Socket_X+", false),
+        (Dir.XMinus,    "Socket_X-", false),
+        (Dir.ZPlus,     "Socket_Z+", false),
+        (Dir.ZMinus,    "Socket_Z-", false),
+        (Dir.YPlus,     "Socket_Y+", true),
+        (Dir.YMinus,    "Socket_Y-", true),
     };
 
     [ContextMenu("Generate")]
     public void Generate()
     {
         foreach (Transform child in root) DestroyImmediate(child.gameObject);
-        map.Clear(); frontier.Clear();
+        map.Clear();
+        frontier.Clear();
 
+        // rng = System.Random()
         var rng = (seed == 0) ? new System.Random() : new System.Random(seed);
 
         // 시작 방
@@ -96,7 +98,7 @@ public class DungeonGen : MonoBehaviour
         // 프런티어 확장
         while (map.Count < maxRooms && frontier.Count > 0)
         {
-            int idx = rng.Next(frontier.Count); // 무작위 인덱스 뽑음
+            int idx = rng.Next(frontier.Count); // 최대값안에서의 무작위 값 뽑음
             var cur = frontier[idx]; // 그 인덱스 의 좌표 사용
             frontier.RemoveAt(idx); // 뽑았으니 리스트에서 제거 (같은 씨앗 사용x)
 
@@ -105,6 +107,7 @@ public class DungeonGen : MonoBehaviour
             for (int i = 0; i < dirs.Count; i++)
             {
                 int j = rng.Next(i, dirs.Count);
+                // 튜플 형식으로 교환 temp(x) , swap기능
                 (dirs[i], dirs[j]) = (dirs[j], dirs[i]);
             }
 
@@ -114,13 +117,19 @@ public class DungeonGen : MonoBehaviour
                 if (map.Count >= maxRooms) break;
                 if (children >= maxChildrenPerRoom) break;
 
+                // 각 좌표 성분의 합
                 var next = cur + DirUtil.step(d);
                 if (map.ContainsKey(next)) continue; // 겹침 건너뛰기
 
                 var rNext = PlaceRoom(next);
 
                 // 양방향 "열림" 설정
+                // doorMask값을 설정 
+                // << : bit_shift ( ex 1 << n : 2의 n제곱임)
+                // 1 << 0 : 000001
+                // 1 << 1 : 000010
                 map[cur].doorMask |= (1 << DirUtil.Bit(d));
+                // 다음 생성될 방의 반대쪽문을 열어주는 거지
                 map[next].doorMask |= (1 << DirUtil.Bit(DirUtil.Opp(d)));
 
                 children++;
@@ -133,7 +142,9 @@ public class DungeonGen : MonoBehaviour
     }
 
     private Room PlaceRoom(Vector3Int grid)
-    {
+    {   
+
+        // Vector3.Scale = 벡터의 성분별 곱셈
         var worldPos = Vector3.Scale((Vector3)grid, cellSize);
         var go = Instantiate(roomShellPrefab, worldPos, Quaternion.identity, root);
         var r = new Room { grid = grid, doorMask = 0, instance = go };
@@ -154,18 +165,19 @@ public class DungeonGen : MonoBehaviour
             //if (open && doorPrefab) Instantiate(doorPrefab, t.position, tag.rotation, parent);
             if (open) continue;
 
+            // t = 소켓 , name = Socket_X+ 이런거임
             var t = parent.Find(name);
-            if (!t)
-            {
-                Debug.LogWarning($"{parent.name}: socket '{name}' not found.");
-                continue;
-            }
+            // if (!t)
+            // {
+            //     Debug.LogWarning($"{parent.name}: socket '{name}' not found.");
+            //     continue;
+            // }
 
             GameObject prefab = (dir == Dir.YPlus || dir == Dir.YMinus) ? capPrefapY :
                                 (dir == Dir.XPlus || dir == Dir.XMinus) ? capPrefapX : capPrefapZ;
 
-            if (!prefab) { Debug.LogWarning($"Missing cap prefab for {(vertical ? "Y" : "XZ")} direction."); continue; }
-
+            //if (!prefab) { Debug.LogWarning($"Missing cap prefab for {(vertical ? "Y" : "XZ")} direction."); continue; }
+            
             Instantiate(prefab, t.position, t.rotation, parent);
         }
     }

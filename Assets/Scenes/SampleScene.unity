@@ -230,7 +230,7 @@ Transform:
   m_GameObject: {fileID: 180837886}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.7341, y: 0.11668, z: 0.02922}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 5, y: 1, z: 5}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -483,8 +483,8 @@ MonoBehaviour:
   capPrefapY: {fileID: 2791338940325140138, guid: 01109341cf5bf0f47ab8087b953a0aaa, type: 3}
   root: {fileID: 1776178613}
   cellSize: {x: 16, y: 16, z: 16}
-  maxRooms: 3
-  maxChildrenPerRoom: 3
+  maxRooms: 25
+  maxChildrenPerRoom: 5
   seed: 0
 --- !u!4 &397938644
 Transform:
