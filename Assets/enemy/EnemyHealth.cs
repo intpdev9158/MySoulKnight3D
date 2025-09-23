@@ -90,7 +90,14 @@ public class EnemyHealth : MonoBehaviour
     }
 
     void Die()
-    {
+    {   
+        // 드랍
+        GetComponent<LootDropper>()?.Drop();
+
+        // 차징 구체 파괴
+        GetComponent<EnemyRangedShooter>()?.OnDeath();
+
+        // 파괴
         Destroy(gameObject);
     }
 

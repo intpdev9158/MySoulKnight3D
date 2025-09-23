@@ -137,6 +137,7 @@ GameObject:
   - component: {fileID: 2292629885593725929}
   - component: {fileID: 1414329083307947197}
   - component: {fileID: 4282655749840066104}
+  - component: {fileID: -6663348336686929987}
   m_Layer: 0
   m_Name: enemy
   m_TagString: Enemy
@@ -317,7 +318,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fbe4fda47eeabd439cc343d282ba6fb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  maxHp: 20
+  maxHp: 5
   currentHp: 0
   healthSlider: {fileID: 5484856173065469058}
   hpLerpSpeed: 8
@@ -325,6 +326,37 @@ MonoBehaviour:
   - {fileID: 4353520473933848885}
   flashColor: {r: 1, g: 0, b: 0, a: 1}
   flashDuration: 0.08
+--- !u!114 &-6663348336686929987
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4060017060109818887}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57a99f6f0bc324f4fb2a85642e11e11d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LootDropper
+  table:
+  - type: 0
+    min: 3
+    max: 10
+    dropChance: 1
+    weight: 1
+  - type: 2
+    min: 3
+    max: 5
+    dropChance: 0
+    weight: 1
+  - type: 1
+    min: 3
+    max: 5
+    dropChance: 0
+    weight: 1
+  coinPrefab: {fileID: 5306415669298091649, guid: 5c250cd8b69793e4fbc89bdabdaced93, type: 3}
+  manaPrefab: {fileID: 7108136072070607325, guid: a5197291833cbf44282417a5880deefb, type: 3}
+  potionPrefab: {fileID: 1599864038306571344, guid: e146587831fcbaa408c5c3b67416b56d, type: 3}
 --- !u!1 &5132422643573839351
 GameObject:
   m_ObjectHideFlags: 0

@@ -46,15 +46,18 @@ public class EnemyRangedShooter : MonoBehaviour
         }
     }
 
+    private GameObject currentCharge;
+
     // IEnumerator는 함수 내부에 실행을 중지하고, 
     // 다음 프레임에서 실행을 재개할 수 있는 yield return 구문을 사용한다.  
     IEnumerator FireRoutine()
     {
-        GameObject charge = null;
+        currentCharge = null;
+
         if (chargeSpherePrefab)
         {
-            charge = Instantiate(chargeSpherePrefab, firePoint.position, firePoint.rotation);
-            charge.transform.localScale = chargeStartScale;
+            currentCharge = Instantiate(chargeSpherePrefab, firePoint.position, firePoint.rotation);
+            currentCharge.transform.localScale = chargeStartScale;
             float t = 0f;
             while (t < chargeTime)
             {
@@ -62,9 +65,9 @@ public class EnemyRangedShooter : MonoBehaviour
                 // Clamp(n , min , max) : n이 최솟값 최댓값 사이에 있는지 확인하고 벗어나면 최솟값 최댓값을 반환
                 // Clamp01 : 0~1 사이 값을 반환!
                 float k = Mathf.Clamp01(t / chargeTime);
-                charge.transform.position = firePoint.position;
+                currentCharge.transform.position = firePoint.position;
                 // 선형 보간(Lerp) : 어떤 수치 -> 어떤 수치 로 부드럽게 변경 되게
-                charge.transform.localScale = Vector3.Lerp(chargeStartScale, chargeEndScale, k);
+                currentCharge.transform.localScale = Vector3.Lerp(chargeStartScale, chargeEndScale, k);
                 // yield return null : 다음 프레임에 실행을 재개한다.
                 // yield return new WaitForSeconds : 지정된 시간 후에 재개한다.
                 yield return null;
@@ -78,6 +81,14 @@ public class EnemyRangedShooter : MonoBehaviour
         Rigidbody rb = proj.GetComponent<Rigidbody>();
         if (rb) rb.linearVelocity = dir * projectileSpeed;
 
-        if (charge) Destroy(charge);
+        if (currentCharge) Destroy(currentCharge);
+    }
+
+    // ← 몬스터가 죽을 때 EnemyHealth에서 호출해줄 메서드
+    public void OnDeath()
+    {
+        if (currentCharge) Destroy(currentCharge);  // 남아있는 차징 구체 제거
+        currentCharge = null;
+        StopAllCoroutines();                        // 돌고 있는 FireRoutine 중단
     }
 }
