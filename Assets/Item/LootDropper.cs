@@ -3,7 +3,7 @@ using UnityEngine;
 [System.Serializable]
 public class LootEntry
 {
-    public LootType type = LootType.Coin;
+    public ItemType type = ItemType.Coin;
     public int min = 1, max = 1; // 드랍갯수 최소/최대 값
     [Range(0, 1f)] public float dropChance = 1f;
     public float weight = 1f;
@@ -45,17 +45,17 @@ public class LootDropper : MonoBehaviour
         var go = Instantiate(prefab, pos, Quaternion.identity);
 
         // 수량
-        // var li = go.GetComponent<LootItem>();
-        // if (li) { li.SetType(pick.type);  li.SetAmount(amt); }
+        var li = go.GetComponent<LootItem>();
+        if (li) { li.SetType(pick.type);  li.SetAmount(amt); }
     }
 
-    GameObject PrefabOf(LootType t)
+    GameObject PrefabOf(ItemType t)
     {
         return t switch
         {
-            LootType.Coin => coinPrefab,
-            LootType.Mana => manaPrefab,
-            LootType.Potion => potionPrefab,
+            ItemType.Coin => coinPrefab,
+            ItemType.Mana => manaPrefab,
+            ItemType.Potion => potionPrefab,
             _ => null
         };
     }

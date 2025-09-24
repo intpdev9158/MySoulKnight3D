@@ -50,11 +50,11 @@ public class PlayerHealth : MonoBehaviour
 
     }
 
-    // public void Heal(int hearts = 1)
-    // {
-    //     currentHearts = Mathf.Min(maxHearts, currentHearts + Mathf.Abs(hearts));
-    //     RefreshHearts();
-    // }
+    public void Heal(int hearts = 1)
+    {
+        currentHearts = Mathf.Min(maxHearts, currentHearts + Mathf.Abs(hearts));
+        RefreshHearts();
+    }
 
     // public void SetMaxHearts(int newMax, bool refill = true)
     // {

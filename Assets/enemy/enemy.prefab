@@ -347,12 +347,12 @@ MonoBehaviour:
   - type: 2
     min: 3
     max: 5
-    dropChance: 0
+    dropChance: 1
     weight: 1
   - type: 1
     min: 3
     max: 5
-    dropChance: 0
+    dropChance: 1
     weight: 1
   coinPrefab: {fileID: 5306415669298091649, guid: 5c250cd8b69793e4fbc89bdabdaced93, type: 3}
   manaPrefab: {fileID: 7108136072070607325, guid: a5197291833cbf44282417a5880deefb, type: 3}
