@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,6 +21,8 @@ public class EnemyHealth : MonoBehaviour
     private Color[] _baseColors;
     private bool _flashing;
     private float _targetFill; // 체력 비율
+
+    public event Action<EnemyHealth> onDied;
 
 
     void Awake()
@@ -96,6 +99,9 @@ public class EnemyHealth : MonoBehaviour
 
         // 차징 구체 파괴
         GetComponent<EnemyRangedShooter>()?.OnDeath();
+
+        // 알리미
+        onDied?.Invoke(this);
 
         // 파괴
         Destroy(gameObject);

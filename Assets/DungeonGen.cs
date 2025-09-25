@@ -2,8 +2,11 @@ using System;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
-using UnityEditor;
+using Unity.VisualScripting;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public enum Dir { XPlus, XMinus, YPlus, YMinus, ZPlus, ZMinus }
 
@@ -58,7 +61,9 @@ public class DungeonGen : MonoBehaviour
     public GameObject capPrefapX;
     public GameObject capPrefapZ;
     public GameObject capPrefapY;
-    // public GameObjecjt doorPrefab;
+    public GameObject doorPrefabX;
+    public GameObject doorPrefabY;
+    public GameObject doorPrefabZ;
     public Transform root;
 
     [Header("Layout")]
@@ -68,8 +73,10 @@ public class DungeonGen : MonoBehaviour
     public int seed = 0;
 
     // 내부상태
-    private readonly Dictionary<Vector3Int, Room> map = new(); // 방 좌표, 방
-    private readonly List<Vector3Int> frontier = new(); // 방 좌표
+    private readonly Dictionary<Vector3Int, Room> map = new();  // 방 좌표, 방
+    private readonly List<Vector3Int> frontier = new();         // 방 좌표
+    private readonly List<Room> order = new();                  // 생성 순서
+    private readonly List<RoomController> roomControllers = new(); // 방 컨트롤러 캐시
 
     // 소켓 이름 테이블
     private static readonly (Dir dir, string name, bool vertical)[] SocketSpec = new[] {
@@ -84,9 +91,25 @@ public class DungeonGen : MonoBehaviour
     [ContextMenu("Generate")]
     public void Generate()
     {
-        foreach (Transform child in root) DestroyImmediate(child.gameObject);
+
+        if (root)
+        {
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+            {
+                foreach (Transform child in root) DestroyImmediate(child.gameObject);
+            }
+            else
+#endif
+            {
+                foreach (Transform child in root) Destroy(child.gameObject);
+            }
+        }
+
         map.Clear();
         frontier.Clear();
+        order.Clear();
+        roomControllers.Clear();
 
         // rng = System.Random()
         var rng = (seed == 0) ? new System.Random() : new System.Random(seed);
@@ -138,48 +161,103 @@ public class DungeonGen : MonoBehaviour
         }
 
         // 각 방에 Cap배치 
-        foreach (var kv in map) BuildCovers(kv.Value);
+        foreach (var kv in map) BuildCoversAndDoors(kv.Value);
     }
 
     private Room PlaceRoom(Vector3Int grid)
-    {   
+    {
 
         // Vector3.Scale = 벡터의 성분별 곱셈
         var worldPos = Vector3.Scale((Vector3)grid, cellSize);
         var go = Instantiate(roomShellPrefab, worldPos, Quaternion.identity, root);
         var r = new Room { grid = grid, doorMask = 0, instance = go };
         map[grid] = r;
+        order.Add(r); // 생성 순서 기록
         return r;
     }
 
-    private void BuildCovers(Room r)
+    private void BuildCoversAndDoors(Room r)
     {
         var parent = r.instance.transform;
+
+        // 방에 RoomController보장
+        var roomCtrl = r.instance.GetComponent<RoomController>();
+        if (!roomCtrl) roomCtrl = r.instance.AddComponent<RoomController>();
+
+        var spawnedDoors = new List<DoorController>();
+        int sourceIdx = order.IndexOf(r); // 현재 방 인덱스
 
         foreach (var (dir, name, vertical) in SocketSpec)
         {
             // 1) doorMask 기반
             bool open = (r.doorMask & (1 << DirUtil.Bit(dir))) != 0;
-
-            // 열려있으면 아무것도 안함
-            //if (open && doorPrefab) Instantiate(doorPrefab, t.position, tag.rotation, parent);
-            if (open) continue;
-
             // t = 소켓 , name = Socket_X+ 이런거임
             var t = parent.Find(name);
-            // if (!t)
-            // {
-            //     Debug.LogWarning($"{parent.name}: socket '{name}' not found.");
-            //     continue;
-            // }
 
-            GameObject prefab = (dir == Dir.YPlus || dir == Dir.YMinus) ? capPrefapY :
-                                (dir == Dir.XPlus || dir == Dir.XMinus) ? capPrefapX : capPrefapZ;
+            GameObject doorPrefab = null;
+            doorPrefab = (dir == Dir.YPlus || dir == Dir.YMinus) ? doorPrefabY :
+                         (dir == Dir.XPlus || dir == Dir.XMinus) ? doorPrefabX : doorPrefabZ;
 
-            //if (!prefab) { Debug.LogWarning($"Missing cap prefab for {(vertical ? "Y" : "XZ")} direction."); continue; }
-            
-            Instantiate(prefab, t.position, t.rotation, parent);
+            if (open && doorPrefab)
+            {
+                // 열린 소켓 + 문 배치
+                var dgo = Instantiate(doorPrefab, t.position, t.rotation, parent);
+                var dc = dgo.GetComponent<DoorController>();
+                if (!dc) dc = dgo.AddComponent<DoorController>();
+
+                // DoorDir 매핑
+                dc.Direction = dir switch
+                {
+                    Dir.XPlus => Doordir.XPlus,
+                    Dir.XMinus => Doordir.XMinus,
+                    Dir.YPlus => Doordir.YPlus,
+                    Dir.YMinus => Doordir.YMinus,
+                    Dir.ZPlus => Doordir.ZPlus,
+                    Dir.ZMinus => Doordir.ZMinus,
+                    _ => Doordir.XPlus
+                };
+
+                dc.OwnerRoom = roomCtrl;
+
+                // 타깃 방 인덱스 계산 ( 이웃 좌표 -> order 인덱스)
+                var nextGrid = r.grid + DirUtil.step(dir);
+                int targetIdx = -1;
+                for (int i = 0; i < order.Count; i++)
+                {
+                    if (order[i].grid == nextGrid)
+                    {
+                        targetIdx = i; break;
+                    }
+                }
+
+                dc.sourceRoomIndex = sourceIdx;
+                dc.targetRoomIndex = targetIdx;
+
+                // 기본 잠금상태 ( 방 클리어 하면 RoomController가 해제)
+                dc.SetLocked(true);
+
+                if (!dc.passageTrigger)
+                {
+                    dc.passageTrigger = dgo.GetComponentInChildren<DoorPassageTrigger>(true);
+
+                }
+
+                spawnedDoors.Add(dc);
+            }
+            else if (!open)
+            {
+                GameObject capPrefab = (dir == Dir.YPlus || dir == Dir.YMinus) ? capPrefapY :
+                                        (dir == Dir.XPlus || dir == Dir.XMinus) ? capPrefapX : capPrefapZ;
+
+                if (capPrefab) Instantiate(capPrefab, t.position, t.rotation, parent);
+            }
         }
+
+        // 방 내 스포너 수집 & 초기화 연결
+        var spawners = r.instance.GetComponentsInChildren<EnemySpawner>(true);
+        roomCtrl.Init(spawnedDoors.ToArray(), spawners);
+
+        roomControllers.Add(roomCtrl);
     }
 
 #if UNITY_EDITOR
@@ -216,5 +294,50 @@ public class DungeonGen : MonoBehaviour
 
         map.Clear();
         frontier.Clear();
+        order.Clear();
+        roomControllers.Clear();
+    }
+
+    public RoomController GetRoomController(int index)
+    {
+        if (index < 0 || index >= roomControllers.Count) return null;
+        return roomControllers[index];
+    }
+
+    public bool IsLastRoom(int index) => (index == roomControllers.Count - 1);
+
+    public Transform GetPlayerSpawn(int index)
+    {
+        var rc = GetRoomController(index);
+        if (!rc) return null;
+
+        var t = rc.transform.Find("PlayerSpawn");
+        return t ? t : rc.transform; // 스폰 포인트 없으면 방 중심
+    }
+
+    public int GetNextIndex(int currentIndex, Doordir doorDir)
+    {
+        if (currentIndex < 0 || currentIndex >= order.Count) return -1;
+        var cur = order[currentIndex];
+
+        Dir stepDir = doorDir switch
+        {
+            Doordir.XPlus => Dir.XPlus,
+            Doordir.XMinus => Dir.XMinus,
+            Doordir.YPlus => Dir.YPlus,
+            Doordir.YMinus => Dir.YMinus,
+            Doordir.ZPlus => Dir.ZPlus,
+            Doordir.ZMinus => Dir.ZMinus,
+            _ => Dir.XPlus
+        };
+
+        var nextGrid = cur.grid + DirUtil.step(stepDir);
+
+        for (int i = 0; i < order.Count; i++)
+        {
+            if (order[i].grid == nextGrid) return i;
+        }
+
+        return -1;
     }
 }

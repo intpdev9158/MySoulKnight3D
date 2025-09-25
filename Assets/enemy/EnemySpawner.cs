@@ -10,32 +10,25 @@ public class EnemySpawner : MonoBehaviour
     public Transform player;
 
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public void Spawn(RoomController owner, Transform playerRef)
     {
+        if (playerRef) player = playerRef;
+
         var ai = enemyPrefab.GetComponent<EnemyAI>();
         if (ai != null) ai.player = player;
 
-        SpawnEnemies();
-    }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
-    void SpawnEnemies()
-    {
         for (int i = 0; i < enemyCount; i++)
         {
-            Vector3 randomPos = player.position + new Vector3(
+            Vector3 randomPos = transform.position + new Vector3(
                 Random.Range(-spanwRange, spanwRange),
                 0f,
                 Random.Range(-spanwRange, spanwRange)
             );
 
-            Instantiate(enemyPrefab, randomPos, Quaternion.identity);
+            var go = Instantiate(enemyPrefab, randomPos, Quaternion.identity);
+            var eh = go.GetComponent<EnemyHealth>();
+            if (eh != null) owner.Register(eh);
         }
     }
 }
