@@ -6,6 +6,20 @@ using UnityEngine.InputSystem;
 
 public enum Doordir { XPlus, XMinus, YPlus, YMinus, ZPlus, ZMinus }
 
+public static class DoorDirUtil
+{
+    public static Doordir Opp(Doordir d) => d switch
+    {
+        Doordir.XPlus => Doordir.XMinus,
+        Doordir.XMinus => Doordir.XPlus,
+        Doordir.YPlus => Doordir.YMinus,
+        Doordir.YMinus => Doordir.YPlus,
+        Doordir.ZPlus => Doordir.ZMinus,
+        Doordir.ZMinus => Doordir.ZPlus,
+        _ => Doordir.XPlus
+    };
+}
+
 public class DoorController : MonoBehaviour
 {
     public Doordir Direction;
@@ -20,7 +34,6 @@ public class DoorController : MonoBehaviour
     public Collider doorBlocker;            // 플레이어 막는 콜라이더(열면 비활성)
     public GameObject lockedIndicator;      // "적을 처치하세요"
     public GameObject interactIndicator;    // "E : 문열기"
-    public DoorPassageTrigger passageTrigger; // 통로 트리거 (열면 활성화)
 
     [Header("Interact (Aim+Dis)")]
     [SerializeField] float interactRange = 3.0f; // 최대 거리
@@ -29,6 +42,9 @@ public class DoorController : MonoBehaviour
 
     enum DoorState { Locked, Closed, Opened }
     DoorState state = DoorState.Locked;
+
+    // 한 번 열린 문은 다시 닫지 않음
+    bool permanentlyOpen = false;
 
     void Start()
     {
@@ -66,7 +82,7 @@ public class DoorController : MonoBehaviour
 #if ENABLE_INPUT_SYSTEM
                 Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame;
 #else
-                Input.GetKeyDown(KeyCode.E);
+            Input.GetKeyDown(KeyCode.E);
 #endif
             if (ePressed) Open();
         }
@@ -74,17 +90,23 @@ public class DoorController : MonoBehaviour
     }
 
     public void SetLocked(bool locked)
-    {
+    {   
+        // 영구 개방이면 잠금/해제 호출 무시 "열림"유지
+        if (permanentlyOpen)
+        {
+            ForceOpenVisual();
+            return;
+        }
+        
         state = locked ? DoorState.Locked : DoorState.Closed;
 
         if (lockedIndicator) lockedIndicator.SetActive(locked);
         if (interactIndicator) interactIndicator.SetActive(!locked);
 
-        if (!locked && state == DoorState.Closed)
+        if (!locked)
         {
             if (doorVisual) doorVisual.SetActive(true);
             if (doorBlocker) doorBlocker.enabled = true;
-            if (passageTrigger) passageTrigger.gameObject.SetActive(false);
         }
     }
 
@@ -93,21 +115,29 @@ public class DoorController : MonoBehaviour
     public void Open()
     {
         if (state != DoorState.Closed) return;
-        state = DoorState.Opened;
 
-        // visual/blocker 해제 
-        if (doorVisual) doorVisual.SetActive(false);
-        if (doorBlocker) doorBlocker.enabled = false;
+        // 내 쪽 먼저 열기
+        ForceOpenVisual();
 
-        // 상호작용 표시 x , 통로 트리거 활성화
-        if (interactIndicator) interactIndicator.SetActive(false);
-
-        if (passageTrigger)
+        // 반대편(타깃방)의 대응 문도 강제로 열기
+        if (targetRoomIndex >= 0 && GameManager.I?.Dungeon)
         {
-            passageTrigger.targetRoomIndex = targetRoomIndex;
-            passageTrigger.gameObject.SetActive(true);
+            var targetRoom = GameManager.I.Dungeon.GetRoomController(targetRoomIndex);
+            var opposite = targetRoom.GetDoor(DoorDirUtil.Opp(Direction));
+            opposite?.ForceOpenVisual();
         }
 
+    }
+
+    // 다음방 상태와 무관하게 오픈
+    public void ForceOpenVisual()
+    {
+        permanentlyOpen = true;
+        state = DoorState.Opened;
+        if (doorVisual) doorVisual.SetActive(false);
+        if (doorBlocker) doorBlocker.enabled = false;
+        if (interactIndicator) interactIndicator.SetActive(false);
+        if (lockedIndicator) lockedIndicator.SetActive(false);
     }
 
     void UpdateIndicators()

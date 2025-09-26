@@ -235,13 +235,6 @@ public class DungeonGen : MonoBehaviour
 
                 // 기본 잠금상태 ( 방 클리어 하면 RoomController가 해제)
                 dc.SetLocked(true);
-
-                if (!dc.passageTrigger)
-                {
-                    dc.passageTrigger = dgo.GetComponentInChildren<DoorPassageTrigger>(true);
-
-                }
-
                 spawnedDoors.Add(dc);
             }
             else if (!open)
@@ -256,8 +249,22 @@ public class DungeonGen : MonoBehaviour
         // 방 내 스포너 수집 & 초기화 연결
         var spawners = r.instance.GetComponentsInChildren<EnemySpawner>(true);
         roomCtrl.Init(spawnedDoors.ToArray(), spawners);
-
         roomControllers.Add(roomCtrl);
+
+        var enterObj = new GameObject("EnterTrigger");
+        enterObj.transform.SetParent(r.instance.transform, false);
+        enterObj.transform.localPosition = new Vector3(0, cellSize.y / 2f, 0);
+
+        var box = enterObj.AddComponent<BoxCollider>();
+        box.isTrigger = true;
+        box.size = new Vector3(
+            Mathf.Max(0.1f, cellSize.x - 2f),
+            Mathf.Max(0.1f, cellSize.y - 2f),
+            Mathf.Max(0.1f, cellSize.z - 2f)
+        );
+
+        var enter = enterObj.AddComponent<RoomEnterTrigger>();
+        enter.roomIndex = order.IndexOf(r);
     }
 
 #if UNITY_EDITOR
@@ -304,7 +311,9 @@ public class DungeonGen : MonoBehaviour
         return roomControllers[index];
     }
 
+
     public bool IsLastRoom(int index) => (index == roomControllers.Count - 1);
+
 
     public Transform GetPlayerSpawn(int index)
     {
