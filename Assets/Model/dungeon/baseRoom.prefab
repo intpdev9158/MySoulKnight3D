@@ -203,6 +203,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2155651119999686498}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6361581674227760361
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6660185153825230972}
+  m_Layer: 0
+  m_Name: ObstacleContainer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6660185153825230972
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6361581674227760361}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2155651119999686498}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7493008088995075331
 GameObject:
   m_ObjectHideFlags: 0
@@ -274,6 +305,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2155651119999686498}
+  - component: {fileID: 5487904472739788749}
   m_Layer: 0
   m_Name: baseRoom
   m_TagString: Untagged
@@ -303,8 +335,33 @@ Transform:
   - {fileID: 182456986424179122}
   - {fileID: 6219466772129377920}
   - {fileID: 7134416883429271614}
+  - {fileID: 6660185153825230972}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5487904472739788749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8682550485514803142}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 509c50a99f3e3cf46be0ca3b600a3acc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObstaclePlacer
+  totalSize: {x: 32, y: 32, z: 32}
+  wallThickness: 2
+  unitSize: 1
+  originAtCorner: 0
+  blockSize: 4
+  fillProb: 0.143
+  useNoise: 1
+  noiseScale: 0.114
+  seed: 12345
+  maxObstacles: 10000
+  cubePrefab: {fileID: 516810085364630240, guid: 14d159da15044dd428b3319e20cff0cc, type: 3}
+  container: {fileID: 6660185153825230972}
 --- !u!1001 &2841703151567096104
 PrefabInstance:
   m_ObjectHideFlags: 0
