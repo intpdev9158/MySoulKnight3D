@@ -46,13 +46,6 @@ public static class DirUtil
     };
 }
 
-public class Room
-{
-    public Vector3Int grid;     // 정수 격자 좌표
-    public int doorMask;        // 6비트 (열림 = 1, 닫힘 =0)
-    public GameObject instance;
-}
-
 
 public class DungeonGen : MonoBehaviour
 {
@@ -67,7 +60,7 @@ public class DungeonGen : MonoBehaviour
     public Transform root;
 
     [Header("Layout")]
-    public Vector3 cellSize = new(16f, 16f, 16f);
+    public Vector3 cellSize = new(32f, 32f, 32f);
     public int maxRooms = 25;
     public int maxChildrenPerRoom = 3;
     public int seed = 0;
@@ -87,6 +80,13 @@ public class DungeonGen : MonoBehaviour
         (Dir.YPlus,     "Socket_Y+", true),
         (Dir.YMinus,    "Socket_Y-", true),
     };
+
+    [Header("Room Type Weights")]
+    [Range(0f,1f)] public float combatWeight = 0.90f;
+    [Range(0f,1f)] public float shopWeight   = 0.05f;
+    [Range(0f,1f)] public float puzzleWeight = 0.05f;
+
+
 
     [ContextMenu("Generate")]
     public void Generate()
@@ -161,7 +161,7 @@ public class DungeonGen : MonoBehaviour
         }
 
         // 각 방에 Cap배치 
-        foreach (var kv in map) BuildCoversAndDoors(kv.Value);
+        foreach (var kv in map) BuildRoom(kv.Value);
     }
 
     private Room PlaceRoom(Vector3Int grid)
@@ -170,13 +170,32 @@ public class DungeonGen : MonoBehaviour
         // Vector3.Scale = 벡터의 성분별 곱셈
         var worldPos = Vector3.Scale((Vector3)grid, cellSize);
         var go = Instantiate(roomShellPrefab, worldPos, Quaternion.identity, root);
-        var r = new Room { grid = grid, doorMask = 0, instance = go };
+        var r = new Room { grid = grid, doorMask = 0, instance = go, kind = ChooseRoomKind(grid) };
         map[grid] = r;
         order.Add(r); // 생성 순서 기록
         return r;
     }
 
-    private void BuildCoversAndDoors(Room r)
+    private RoomKind ChooseRoomKind(Vector3Int grid)
+    {
+        if (grid == Vector3Int.zero)
+        {
+            return RoomKind.Default;
+        }
+
+        float sum = combatWeight + shopWeight + puzzleWeight;
+        if(sum <= 0f) return RoomKind.Default;
+
+        float cw = combatWeight / sum;
+        float sw = shopWeight / sum;
+
+        float rv = UnityEngine.Random.value; // 0~1 랜덤
+        if      (rv < cw)       return RoomKind.Combat;
+        else if (rv < cw + sw)  return RoomKind.Shop;
+        else                    return RoomKind.Puzzle;
+    }
+
+    private void BuildRoom(Room r)
     {
         var parent = r.instance.transform;
 
@@ -246,14 +265,14 @@ public class DungeonGen : MonoBehaviour
             }
         }
 
-        // 방 내 스포너 수집 & 초기화 연결
+        // 방 내 정보 , 스포너 , 문 수집 & 초기화 연결
         var spawners = r.instance.GetComponentsInChildren<EnemySpawner>(true);
-        roomCtrl.Init(spawnedDoors.ToArray(), spawners);
+        roomCtrl.Init(r ,spawnedDoors.ToArray(), spawners);
         roomControllers.Add(roomCtrl);
 
         var enterObj = new GameObject("EnterTrigger");
         enterObj.transform.SetParent(r.instance.transform, false);
-        enterObj.transform.localPosition = new Vector3(0, cellSize.y / 2f, 0);
+        enterObj.transform.localPosition = new Vector3(0, 0, 0);
 
         var box = enterObj.AddComponent<BoxCollider>();
         box.isTrigger = true;

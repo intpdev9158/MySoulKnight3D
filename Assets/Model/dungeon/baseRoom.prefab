@@ -351,17 +351,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ObstaclePlacer
   totalSize: {x: 32, y: 32, z: 32}
-  wallThickness: 2
+  wallThickness: 4
   unitSize: 1
   originAtCorner: 0
-  blockSize: 4
-  fillProb: 0.143
+  blockSize: 2
+  baseFill: 0.48
+  seed: -682640718
   useNoise: 1
-  noiseScale: 0.114
-  seed: 12345
+  noiseScale: 0.2
+  noiseOctaves: 2
+  noiseGain: 0.5
+  noiseLacunarity: 2
+  smoothSteps: 1
+  deathLimit: 9
+  birthLimit: 14
   maxObstacles: 10000
   cubePrefab: {fileID: 516810085364630240, guid: 14d159da15044dd428b3319e20cff0cc, type: 3}
   container: {fileID: 6660185153825230972}
+  randomizeSeedOnRebuild: 1
 --- !u!1001 &2841703151567096104
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -1,13 +1,16 @@
 using UnityEngine;
 using System;
 
+[RequireComponent(typeof(ObstaclePlacer))]
 public class RoomController : MonoBehaviour
 {
+    public Room data;
     [SerializeField] DoorController[] doors;
     [SerializeField] EnemySpawner[] spawners;
 
     public bool HasActivated { get; private set; }
     public bool IsCleared { get; private set; }
+
     public int RemainingEnemies => alive;
 
     public event Action OnAllEnemiesDead;
@@ -23,8 +26,9 @@ public class RoomController : MonoBehaviour
         return null;
     }
 
-    public void Init(DoorController[] ds, EnemySpawner[] es)
+    public void Init(Room room, DoorController[] ds, EnemySpawner[] es)
     {
+        data = room;
         doors = ds;
         spawners = es;
         LockDoors(true);
@@ -41,22 +45,39 @@ public class RoomController : MonoBehaviour
     }
 
     // 방활성화 -> 적다죽으면 ClearRoom()
+    // 방 활성화: 전투방이면 스폰 + 문잠금, 아니면 문 잠그지 않음
     public void Activate(Transform player)
     {
         if (HasActivated || IsCleared) return;
         HasActivated = true;
-
-        LockDoors(true);
-        alive = 0;
-
-        foreach (var sp in spawners)
+        
+        if (data.kind == RoomKind.Combat)
         {
-            sp.Spawn(this, player);
-        }
+            Debug.Log("전투");
+            var placer = GetComponent<ObstaclePlacer>();
+            if (placer)
+            {
+                Debug.Log("장애물");
+                placer.Rebuild();
+            }
 
-        // 적이 나오지 않는 방
-        if (alive <= 0) ClearRoom();
+            // 전투방: 문 잠그고, 장애물 생성(옵션), 적 스폰
+            LockDoors(true);
+
+            alive = 0;
+            foreach (var sp in spawners)
+                sp.Spawn(this, player);
+
+            // 적이 아예 안 나오면 즉시 클리어(문 열림)
+            if (alive <= 0) ClearRoom();
+        }
+        else
+        {
+            Debug.Log("전투x");
+            ClearRoom();
+        }
     }
+
 
     public void Register(EnemyHealth eh)
     {

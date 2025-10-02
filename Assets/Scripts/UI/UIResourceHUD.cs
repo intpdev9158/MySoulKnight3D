@@ -23,7 +23,6 @@ public class UIResourceHUD : MonoBehaviour
             // HandleChanged 메서드를 이 이벤트에 추가로 등록 하라는 뜻
             // 즉 OnCountChanged 함수가 발생 하면 HandleChanged 함수도 실행해달라는 뜻!
             InventoryCounter.Instance.OnCountChanged += HandleChanged;
-            Debug.Log("OnEnable");
 
         RefreshAll();
     }
@@ -36,7 +35,6 @@ public class UIResourceHUD : MonoBehaviour
 
     void HandleChanged(ItemType type, int newCount)
     {
-        Debug.Log("HandleChanged");
         switch (type)
         {
             case ItemType.Coin:
